@@ -1,4 +1,3 @@
-
 import { TwitterIcon } from "../../icons/TwitterIcon";
 import { YoutubeIcon } from "../../icons/YoutubeIcon";
 import { Document } from "../../icons/Document";
@@ -7,96 +6,120 @@ import { LinkIcon } from "../../icons/LinkIcon";
 import ChatIcon from "../../icons/ChatIcon";
 import { useNavigate } from "react-router-dom";
 import SidebarIcon from "../../icons/SidebarIcon";
-
+import { motion } from "framer-motion";
+import BrainIcon from "../../icons/BrainIcon";
 
 interface SidebarProps {
   selectedType: "twitter" | "youtube" | "document" | "links" | "chat";
   onSelectType: (type: "twitter" | "youtube" | "document" | "links" | "chat") => void;
-  user?:{
-    username:String,
-    email:String
-  },
-  sidebaropen:boolean,
-  setSidebaropen:(open:boolean)=>void;
+  user?: {
+    username: String;
+    email: String;
+  };
+  sidebaropen: boolean;
+  setSidebaropen: (open: boolean) => void;
 }
 
+export function Sidebar({
+  selectedType,
+  onSelectType,
+  user,
+  sidebaropen,
+  setSidebaropen,
+}: SidebarProps) {
+  const navigate = useNavigate();
+  const toggleSidebar = () => setSidebaropen(!sidebaropen);
 
-
-export function Sidebar({ selectedType, onSelectType, user,sidebaropen , setSidebaropen}: SidebarProps) {
-    const navigate =useNavigate();
-    
-    const Side = () => setSidebaropen(!sidebaropen);
   return (
     <>
-     <button onClick={Side} className={`fixed top-7 z-50 cursor-pointer transition-all duration-300  ${sidebaropen ? "left-[16rem]" : "left-4"}`}><span><SidebarIcon/></span></button>
-    
-    <div className={`fixed top-0 left-0 h-screen bg-white  w-72 pl-4 transform transition-transform duration-300 z-40
-        ${sidebaropen ? "translate-x-0" : "-translate-x-full"}`}>
-      
-      <div className="flex text-2xl items-center pt-6 pl-2">
-        <div className="flex justify-center mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 690.6" className="w-10 h-10 fill-indigo-600">
-                    <path d="M718.55 285.77c-3.53-20.72-13.28-39.59-28.24-54.59-16.34-16.3-37.24-26.33-59.8-28.95v-27.28c0-5.74-.49-11.51-1.46-17.13-3.52-20.72-13.28-39.59-28.24-54.59-16.28-16.25-37.11-26.27-59.6-28.93-4.63-16.79-13.44-32.07-25.96-44.62C496.08 10.54 470.62 0 443.56 0c-35.72 0-67.51 18.38-85.6 46.89-3.93-6.15-8.52-11.94-13.78-17.22C324.99 10.54 299.53 0 272.47 0c-46.16 0-85.74 30.7-97.71 74.29-44.16 5.26-80.14 38.75-87.75 83.49-.97 5.65-1.46 11.42-1.46 17.15v27.86C37.24 210.45 0 252.65 0 302.9v84.8c0 5.73.49 11.51 1.46 17.13 3.52 20.72 13.28 39.59 28.24 54.59 15.38 15.35 34.81 25.15 55.86 28.43v27.78c0 5.74.49 11.51 1.46 17.13 3.52 20.72 13.28 39.58 28.24 54.59 16.28 16.24 37.09 26.26 59.56 28.92 4.62 16.8 13.44 32.09 25.97 44.66 19.18 19.13 44.64 29.67 71.7 29.67 35.72 0 67.5-18.38 85.6-46.89 3.93 6.15 8.52 11.94 13.78 17.22 19.17 19.13 44.63 29.67 71.7 29.67 46.17 0 85.76-30.71 97.72-74.32 44.17-5.25 80.15-38.74 87.76-83.49.97-5.65 1.47-11.42 1.47-17.16v-27.26c50.22-5.93 89.49-49.06 89.49-100.67v-84.8c0-5.73-.49-11.5-1.45-17.13ZM85.56 430.83v24.7c-12.56-2.91-24.11-9.19-33.45-18.51-10.28-10.31-16.99-23.27-19.41-37.52-.67-3.88-1-7.85-1-11.79v-84.8c0-32.8 23.1-60.58 53.86-67.8v24.65c0 35.79 18.9 67.49 47.22 85.54-28.32 18.06-47.22 49.76-47.22 85.54Zm513.25 84.8c0 3.94-.34 7.91-1.01 11.82-4.79 28.18-25.98 49.81-52.85 56.02V456.34c8.51-5.3 14.19-14.72 14.19-25.49 0-16.59-13.45-30.04-30.04-30.04s-30.04 13.45-30.04 30.04c0 10.77 5.68 20.18 14.19 25.49v132.88c0 3.94-.34 7.91-1.01 11.82-5.71 33.54-34.59 57.88-68.69 57.88-18.61 0-36.12-7.25-49.28-20.38-10.28-10.3-16.99-23.27-19.41-37.52-.67-3.88-1-7.85-1-11.79v-60.44c8.51-5.3 14.19-14.72 14.19-25.49 0-16.59-13.45-30.04-30.04-30.04s-30.04 13.45-30.04 30.04c0 10.77 5.68 20.18 14.19 25.49v60.44c0 3.94-.34 7.91-1.01 11.82-5.71 33.54-34.59 57.88-68.69 57.88-18.61 0-36.12-7.25-49.28-20.38-10.28-10.31-16.99-23.27-19.41-37.51-.67-3.89-1-7.86-1-11.8v-132.9c8.51-5.3 14.19-14.72 14.19-25.49 0-16.59-13.45-30.04-30.04-30.04s-30.04 13.45-30.04 30.04c0 10.77 5.68 20.18 14.19 25.49v127.13c-12.55-2.91-24.09-9.19-33.42-18.5-10.28-10.31-16.99-23.27-19.41-37.52-.67-3.88-1-7.85-1-11.79v-84.8c0-37.9 30.81-69.15 68.68-69.66l.88-.03 1.16.03c37.87.51 68.68 31.76 68.68 69.66V601.2h31.7V430.86c0-35.79-18.9-67.49-47.22-85.54 28.32-18.06 47.22-49.76 47.22-85.54V89.4h-31.7v170.35c0 37.9-30.81 69.15-68.68 69.66l-.97.05-1.07-.05c-37.87-.51-68.68-31.76-68.68-69.66v-84.8c0-3.94.34-7.91 1.01-11.82 4.79-28.17 25.97-49.79 52.83-56.01v127.16c-8.51 5.3-14.19 14.72-14.19 25.49 0 16.59 13.45 30.04 30.04 30.04s30.04-13.45 30.04-30.04c0-10.77-5.68-20.18-14.19-25.49V101.39c0-3.94.34-7.91 1.01-11.82 5.71-33.54 34.59-57.88 68.69-57.88 18.61 0 36.12 7.25 49.28 20.38 10.28 10.31 16.99 23.27 19.41 37.52.67 3.89 1 7.86 1 11.8v59.46c-8.51 5.3-14.19 14.72-14.19 25.49 0 16.59 13.45 30.04 30.04 30.04s30.04-13.45 30.04-30.04c0-10.77-5.68-20.18-14.19-25.49v-59.46c0-3.94.34-7.91 1.01-11.82 5.7-33.54 34.59-57.88 68.68-57.88 18.61 0 36.12 7.25 49.28 20.38 10.28 10.31 16.99 23.27 19.41 37.52.67 3.89 1 7.86 1 11.8v132.88c-8.51 5.3-14.19 14.72-14.19 25.49 0 16.59 13.45 30.04 30.04 30.04s30.04-13.45 30.04-30.04c0-10.77-5.68-20.18-14.19-25.49V107.12c12.56 2.91 24.11 9.19 33.45 18.51 10.28 10.31 16.99 23.27 19.41 37.52.67 3.88 1 7.84 1 11.79v84.8c0 37.9-30.81 69.15-68.68 69.66l-.95.05-1.08-.05c-37.87-.51-68.68-31.76-68.68-69.66V89.4h-31.7v170.35c0 35.79 18.9 67.49 47.22 85.54-28.32 18.06-47.22 49.76-47.22 85.54v170.34h31.7V430.83c0-37.9 30.81-69.15 68.68-69.66l.88-.03 1.16.03c37.87.51 68.68 31.76 68.68 69.66v84.8ZM688.3 387.7c0 34.18-25.09 62.88-57.8 68.56v-25.44c0-35.79-18.9-67.49-47.22-85.54 28.32-18.06 47.22-49.76 47.22-85.54v-25.47c14.08 2.41 27.08 9.02 37.39 19.31 10.28 10.31 16.99 23.27 19.41 37.52.67 3.89 1 7.86 1 11.8v84.8Z" data-name="Layer_1"/>
-                </svg>
-                <h1 className="text-xl font-semibold mt-1 pl-2">SecondBrain</h1>
-        </div>
-      </div>
-      <div className="pt-7 flex flex-col space-y-4">
-        <SidebarItem
-          text="Youtube"
-          icon={<YoutubeIcon />}
-          selected={selectedType === "youtube"}
-          onClick={() => onSelectType("youtube")}
-        />
-        <SidebarItem
-          text="Twitter"
-          icon={<TwitterIcon />}
-          selected={selectedType === "twitter"}
-          onClick={() => onSelectType("twitter")}
-        />
-        <SidebarItem
-          text="Links"
-          icon={<LinkIcon />}
-          selected={selectedType === "links"}
-          onClick={() => onSelectType("links")}
-        />
-        <SidebarItem
-          text="Document"
-          icon={<Document />}
-          selected={selectedType === "document"}
-          onClick={() => onSelectType("document")}
-        />
-        <SidebarItem
-          text="Chat With Anything"
-          icon={<ChatIcon />}
-          selected={selectedType === "chat"}
-          onClick={() => onSelectType("chat")}
-        />
-        
-      </div>
-      {user && (
-      <div className="absolute  bottom-1 left-0 w-full  bg-gray-100 p-4 rounded-lg shadow-md">
-        <div className="flex items-center">
-            <div className="w-10 h-10 bg-blue-400 rounded-full flex items-center justify-center text-lg font-semibold text-white mr-2 mt-2 font-serif">{user.username[0].toUpperCase()}</div>
-            <div>
-            <h3 className="text-sm font-semibold font-serif">{user.username}</h3>
-            <p className="text-xs text-gray-600 font-serif">{user.email}</p>
-            </div>
-        </div>
-        <div></div>
+      {/* Toggle Button */}
       <button
-              className="text-xs text-blue-600 mt-2 underline cursor-pointer ml-12 font-serif"
-              onClick={() => {
-              localStorage.removeItem("user");
-              navigate("/signin");
-      }}>
-      Logout
-    </button>
-  </div>
-)}
+        onClick={toggleSidebar}
+        className={`fixed top-4 z-50 rounded-full bg-white p-2 shadow-md transition-all duration-300 hover:bg-gray-100 ${
+          sidebaropen ? "left-[15rem]" : "left-2"
+        }`}
+      >
+        <SidebarIcon />
+      </button>
 
-    </div>
+      {/* Sidebar */}
+      <motion.aside
+        initial={false}
+        animate={{ x: sidebaropen ? 0 : -320 }}
+        transition={{ type: "spring", stiffness: 260, damping: 24 }}
+        className="fixed left-0 top-0 z-40 flex h-screen w-72 flex-col border-r border-gray-200 bg-gradient-to-b from-white to-gray-50 px-4"
+      >
+        {/* Logo */}
+        <div className="flex items-center gap-2 pt-6 pl-2">
+          <BrainIcon height={30} width={30}/>
+          <h1 className="text-lg font-semibold  tracking-tight text-gray-900">
+            SecondBrain
+          </h1>
+        </div>
+
+        {/* Navigation */}
+        <nav className="mt-8 flex flex-1 flex-col gap-2">
+          <SidebarItem
+            text="YouTube"
+            icon={<YoutubeIcon />}
+            selected={selectedType === "youtube"}
+            onClick={() => onSelectType("youtube")}
+          />
+          <SidebarItem
+            text="Twitter"
+            icon={<TwitterIcon />}
+            selected={selectedType === "twitter"}
+            onClick={() => onSelectType("twitter")}
+          />
+          <SidebarItem
+            text="Links"
+            icon={<LinkIcon />}
+            selected={selectedType === "links"}
+            onClick={() => onSelectType("links")}
+          />
+          <SidebarItem
+            text="Documents"
+            icon={<Document />}
+            selected={selectedType === "document"}
+            onClick={() => onSelectType("document")}
+          />
+          <SidebarItem
+            text="Chat with Anything"
+            icon={<ChatIcon />}
+            selected={selectedType === "chat"}
+            onClick={() => onSelectType("chat")}
+          />
+        </nav>
+
+         {/* User Card  */}
+        {user && (
+          <div className="mb-4 rounded-2xl bg-white p-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-sm font-semibold text-white">
+                {user.username[0].toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-gray-900">
+                  {user.username}
+                </p>
+                <p className="truncate text-xs text-gray-500">
+                  {user.email}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                localStorage.removeItem("user");
+                navigate("/signin");
+              }}
+              className="mt-3 w-full rounded-lg border border-gray-200 py-1.5 text-xs font-medium text-red-500 transition hover:bg-red-50"
+            >
+              Logout
+            </button>
+          </div>
+        )}
+      </motion.aside>
     </>
-    
   );
 }
