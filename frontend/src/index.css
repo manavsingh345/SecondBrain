@@ -1,2 +1,10 @@
 @import "tailwindcss";
 
+.dashboard-grid {
+  background-color: #fafafa;
+  background-image:
+    linear-gradient(to right, rgba(0,0,0,0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0,0,0,0.04) 1px, transparent 1px),
+    radial-gradient(circle at 1px 1px, rgba(0,0,0,0.08) 1px, transparent 0);
+  background-size: 32px 32px, 32px 32px, 32px 32px;
+}

@@ -31,7 +31,7 @@ export function Sidebar({
   const toggleSidebar = () => setSidebaropen(!sidebaropen);
 
   return (
-    <>
+    <div className="">
       {/* Toggle Button */}
       <button
         onClick={toggleSidebar}
@@ -47,7 +47,7 @@ export function Sidebar({
         initial={false}
         animate={{ x: sidebaropen ? 0 : -320 }}
         transition={{ type: "spring", stiffness: 260, damping: 24 }}
-        className="fixed left-0 top-0 z-40 flex h-screen w-72 flex-col border-r border-gray-200 bg-gradient-to-b from-white to-gray-50 px-4"
+        className="fixed dashboard-grid  left-0 top-0 z-40 flex h-screen w-72 flex-col border-r border-gray-200 bg-gradient-to-b from-white to-gray-50 px-4"
       >
         {/* Logo */}
         <div className="flex items-center gap-2 pt-6 pl-2">
@@ -57,7 +57,7 @@ export function Sidebar({
           </h1>
         </div>
 
-        {/* Navigation */}
+
         <nav className="mt-8 flex flex-1 flex-col gap-2">
           <SidebarItem
             text="YouTube"
@@ -120,6 +120,6 @@ export function Sidebar({
           </div>
         )}
       </motion.aside>
-    </>
+    </div>
   );
 }

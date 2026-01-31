@@ -129,18 +129,11 @@ export function Dashboard() {
   };
 
   return (
-    <div>
-      <div className="fixed top-0 left-0 h-screen w-10 bg-gray-100 z-0"></div>
-      <Sidebar
-        selectedType={selectedType}
-        onSelectType={setSelectedType}
-        user={user}
-        sidebaropen={sidebaropen}
-        setSidebaropen={setSidebaropen}
-      />
+    <div className='dashboard-grid'>
+      <Sidebar selectedType={selectedType} onSelectType={setSelectedType} user={user} sidebaropen={sidebaropen} setSidebaropen={setSidebaropen}/>
 
       <div
-        className={`min-h-screen dashboard-grid transition-all duration-300
+        className={`min-h-screen transition-all duration-300
     ${sidebaropen ? 'ml-72' : 'ml-10 '}`}
       >
         <MyContext.Provider value={providerValues}>
@@ -161,7 +154,7 @@ export function Dashboard() {
         />
 
         {selectedType !== 'chat' && (
-          <div className="relative flex items-center py-4">
+          <div className="relative flex items-center py-5">
             <div className="ml-auto flex pl-2 gap-4 z-20 relative">
                 <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
