@@ -170,7 +170,7 @@ export function Card({ title, link, type, onDelete, date, onClick }: CardProps) 
 
   return (
     <div onClick={onClick} className="cursor-pointer group">
-      <div className={`relative bg-gradient-to-br ${typeColors[type]} rounded-2xl shadow-lg border border-gray-200/50 w-80 h-[400px] overflow-hidden transition-all duration-300 ease-out hover:shadow-2xl hover:-translate-y-2 hover:border-gray-300/70`}>
+      <div className={`relative bg-gradient-to-br ${typeColors[type]} rounded-2xl shadow-lg border border-gray-200/50 w-90 h-[520px] overflow-hidden transition-all duration-300 ease-out hover:shadow-2xl hover:-translate-y-2 hover:border-gray-300/70`}>
 
         
         <div className="relative bg-white/70 backdrop-blur-sm border-b border-gray-200/50 px-5 py-4">
@@ -232,7 +232,7 @@ export function Card({ title, link, type, onDelete, date, onClick }: CardProps) 
           <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
             {type === "youtube" && (
               <iframe
-                className="w-full h-[220px]"
+                className="w-full h-[320px]"
                 src={link.replace("watch", "embed").replace("?v=", "/")}
                 title="YouTube video player"
                 frameBorder="0"
@@ -243,7 +243,7 @@ export function Card({ title, link, type, onDelete, date, onClick }: CardProps) 
             )}
 
             {type === "twitter" && (
-              <div className="w-full h-[220px] overflow-auto">
+              <div className="w-full h-[320px] overflow-auto">
                 <blockquote className="twitter-tweet w-full h-full overflow-auto">
                   <a href={link.replace("x.com", "twitter.com")}></a>
                 </blockquote>
@@ -251,7 +251,7 @@ export function Card({ title, link, type, onDelete, date, onClick }: CardProps) 
             )}
 
             {type === "document" && (
-              <div className="p-4 h-[220px] overflow-auto">
+              <div className="p-4 h-[320px] overflow-auto">
                 <p className="text-gray-700 whitespace-pre-line text-sm leading-relaxed">
                   {link}
                 </p>
@@ -259,7 +259,7 @@ export function Card({ title, link, type, onDelete, date, onClick }: CardProps) 
             )}
 
             {type === "links" && (
-              <div className="h-[220px] overflow-hidden">
+              <div className="h-[320px] overflow-hidden">
                 <Microlink url={link} size="large" />
               </div>
             )}

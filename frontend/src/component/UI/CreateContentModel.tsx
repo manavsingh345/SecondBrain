@@ -127,6 +127,8 @@
 // );
 // }
 
+// <div className="relative flex items-center py-4">
+ //  <div className={`absolute left-1/2 -translate-x-1/2 ${sidebaropen ? "min-w-5xl" : "min-w-2xl"}`}></div>
 import { useRef, useState } from 'react';
 import { CrossIcon } from '../../icons/CrossIcon.tsx';
 import { Input } from './Input.tsx';
