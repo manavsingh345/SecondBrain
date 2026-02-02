@@ -5,15 +5,18 @@ import generateOpenAiResponse from "../utils/openai.js";
 import { authMiddleware } from "../middleware.js";
 import 'dotenv/config';
 import multer from 'multer';
-import {Queue} from "bullmq";
+import {Job, Queue} from "bullmq";
 import { GoogleGenerativeAIEmbeddings,ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { QdrantVectorStore } from "@langchain/qdrant";
 import cloudinary from "../uploadCloudinary.js";
+import { YoutubeTranscript } from "youtube-transcript";
 import fs from "fs"
-
+import axios from "axios";
 import cors from 'cors'
 import { generateTitleFromMessage } from "../utils/summary.js";
 import PDFfile from "../models/PDFfile.js";
+import Linkfile from "../models/Linkfile.js";
+import * as cheerio from "cheerio";
 const app=express();
 app.use(cors())
 
@@ -73,11 +76,7 @@ router.delete("/thread/:threadId",authMiddleware,async(req,res)=>{
 });
 
 
-
-
-
-
-// //pdf
+//pdf
 const upload = multer({ dest: "uploads/" }); 
 router.post('/upload/pdf', authMiddleware, upload.single('pdf'), async (req, res) => {
   try {
@@ -135,12 +134,14 @@ router.post('/upload/pdf', authMiddleware, upload.single('pdf'), async (req, res
     }
 
     // 4 Send job to worker
-    await queue.add("file-ready", {
-      pdfId: pdf._id.toString(),
-      userId,
-      filename: originalName,
-      path: cloudUpload.secure_url
+    await queue.add("file-upload-queue", {
+        type: "pdf",
+        pdfId: pdf._id.toString(),
+        userId,
+        filename: originalName,
+        path: cloudUpload.secure_url
     });
+
 
     // 5  SAVE a message for this uploaded PDF in the thread history
    th.messages.push({
@@ -167,9 +168,183 @@ router.post('/upload/pdf', authMiddleware, upload.single('pdf'), async (req, res
   }
 });
 
+//Youtube
+router.post("/youtube", authMiddleware, async (req, res) => {
+  function extractVideoId(url:any) {
+  const patterns = [
+    /v=([^&]+)/,
+    /youtu\.be\/([^?]+)/,
+    /shorts\/([^?]+)/,
+    /embed\/([^?]+)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  return null;
+}
+
+  try {
+    const { url, threadId } = req.body;
+    if (!url) return res.status(400).json({ message: "YouTube URL required" });
+
+    const videoId = extractVideoId(url);
+if (!videoId) {
+  return res.status(400).json({ message: "Invalid YouTube URL" });
+}
+
+    let transcript;
+try {
+  transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang: "en" });
+} catch {
+  transcript = await YoutubeTranscript.fetchTranscript(videoId);
+}
+
+    if (!transcript || transcript.length === 0) {
+      console.log("transcript have length 0");
+      return res.status(400).json({
+        message: "This video has captions, but transcript could not be extracted"
+      });
+    }
+    const fullText = transcript.map(t => t.text).join(" ");
+
+    let th = threadId
+      ? await thread.findOne({ threadId, userId: req.userId })
+      : null;
+
+    if (!th) {
+      th = new thread({
+        threadId: Date.now().toString(),
+        title: "YouTube Chat",
+        messages: [],
+        youtubeIds: [videoId],
+        userId: req.userId
+      });
+    } else {
+      if (!th.youtubeIds?.includes(videoId)) {
+        th.youtubeIds.push(videoId);
+      }
+    }
+
+    th.messages.push({
+      role: "user",
+      content: "Uploaded a YouTube video",
+      videoId,
+      videoUrl: url
+    });
+
+    await th.save();
+      console.log("QUEUEING YOUTUBE JOB", {
+      videoId,
+      textLength: fullText.length,
+    });
+    console.log({
+  videoId,
+  transcriptLength: transcript?.length,
+  firstLine: transcript?.[0]?.text
+});
 
 
-// // Get all uploaded PDFs (for history)
+    await queue.add("file-upload-queue", {
+      type: "youtube",
+      videoId,
+      text: fullText,
+      userId: req.userId
+    });
+
+    res.json({
+      success: true,
+      threadId: th.threadId,
+      message: "YouTube video processing started"
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to process YouTube video" });
+  }
+});
+
+// Link
+router.post("/upload/link", authMiddleware, async (req, res) => {
+  try {
+    const { url, threadId, message } = req.body;
+    const userId = req.userId;
+
+    if (!url) return res.status(400).json({ error: "URL required" });
+
+    // 1 Fetch HTML
+    const html = await axios.get(url).then(r => r.data);
+
+    // 2 Extract text (Cheerio first)
+    const $ = cheerio.load(html);
+    let text = $("body").text().replace(/\s+/g, " ").trim();
+
+    if (text.length < 200) {
+      return res.status(400).json({
+        error: "This link does not expose readable text"
+      });
+    }
+
+    // 3 Save link
+    const link = await Linkfile.create({
+      url,
+      title: $("title").text() || url,
+      embedded: false,
+      userId
+    });
+
+    // 4 Attach to thread
+    let th;
+    if (threadId) {
+      th = await thread.findOne({ threadId, userId });
+      if (!th) {
+        th = new thread({
+          threadId,
+          title: "Link Chat",
+          messages: [],
+          linkIds: [link._id],
+          userId
+        });
+      } else {
+        th.linkIds = th.linkIds || [];
+        th.linkIds.push(link._id);
+        th.updatedAt = new Date();
+      }
+    } else {
+      th = new thread({
+        threadId: Date.now().toString(),
+        title: "Link Chat",
+        messages: [],
+        linkId: [link._id],
+        userId
+      });
+    }
+
+    await th.save();
+
+    // 5 Push job to queue
+    await queue.add("file-upload-queue", {
+      type: "link",
+      text,
+      linkId: link._id,
+      userId
+    });
+
+    res.json({
+      success: true,
+      linkId: link._id,
+      preview: text.slice(0, 300)
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to process link" });
+  }
+});
+
+
+// Get all uploaded PDFs (for history)
 router.get("/pdf/history", authMiddleware,async (req, res) => {
   try {
     const pdfs = await PDFfile.find({userId:req.userId}).sort({ uploadedAt: -1 });
@@ -191,7 +366,7 @@ router.post("/chat1", authMiddleware,async (req, res) => {
   }
 
   try {
-    // --- Fetch or create thread ---
+    // Fetch or create thread
     let th = await thread.findOne({ threadId, userId: req.userId});
     if (!th) {
       const shortTitle = await generateTitleFromMessage(message);
@@ -209,15 +384,17 @@ router.post("/chat1", authMiddleware,async (req, res) => {
 
     let assistantReply;
 
-    // --- Check if thread has PDFs ---
-    if (th.pdfId && th.pdfId.length > 0) {
-      console.log("PDFs found → using Gemini with context");
+    const hasPDFs = Array.isArray(th.pdfId) && th.pdfId.length > 0;
+    const hasYoutube = Array.isArray(th.youtubeIds) && th.youtubeIds.length > 0;
+    const hasLinks = Array.isArray(th.linkIds) && th.linkIds.length > 0;
 
-      // 1️ Build embeddings retriever
-      const embeddings = new GoogleGenerativeAIEmbeddings({
-        model: "text-embedding-004",
-        apiKey: process.env.GEMINI_RAG_KEY || "",
-      });
+
+      if (hasPDFs || hasYoutube || hasLinks) {
+        console.log("Context found → using Gemini with vector search");
+        const embeddings = new GoogleGenerativeAIEmbeddings({
+                 model: "text-embedding-004",
+                 apiKey: process.env.GEMINI_RAG_KEY || "",
+        });
 
       const vectorStore = await QdrantVectorStore.fromExistingCollection(
         embeddings,
@@ -226,30 +403,78 @@ router.post("/chat1", authMiddleware,async (req, res) => {
           collectionName: `user_${req.userId}`,
         }
       );
+      const mustFilters: any[] = [
+        { key: "metadata.userId", match: { value: req.userId } }
+      ];
 
-      // Filter only the PDFs attached to this thread
-        const pdfIds = th.pdfId.map(id => id.toString());
-      // Filter only chunks belonging to this thread's PDFs
-        const filter = {
-            should: pdfIds.map(id => ({
+      const shouldFilters: any[] = [];
+
+      // PDFs
+      if (hasPDFs) {
+        shouldFilters.push(
+          ...th.pdfId.map(id => ({
             key: "metadata.pdfId",
+            match: { value: id.toString() }
+          }))
+        );
+      }
+
+      // YouTube
+      if (hasYoutube) {
+        shouldFilters.push(
+          ...th.youtubeIds.map(id => ({
+            key: "metadata.videoId",
             match: { value: id }
           }))
-        };
-      // Retrieve top-k chunks
+        );
+      }
+
+      //links
+      if (hasLinks) {
+        shouldFilters.push(
+          ...th.linkIds.map(id => ({
+            key: "metadata.linkId",
+            match: { value: id.toString() }
+          }))
+        );
+      }
+
+
+      const filter = {
+        must: mustFilters,
+        should: shouldFilters
+      };
       const results = await vectorStore.similaritySearch(message, 6, filter);
 
+  
 
       // 2️ System prompt
       const contextText = results.map(r => r.pageContent).join("\n\n");
-      const SYSTEM_PROMPT = `You are a helpful assistant that answers questions based on the provided PDF context. 
-      If the answer exists in the context, answer from context.
-      If the context does not contain the answer, rely on your general knowledge.
-      Do not say "context not provided". 
-      Instead, answer naturally.
-      Context: ${contextText}`;
+      const SYSTEM_PROMPT = `
+          You are SecondBrain — a personal knowledge assistant.
 
-      // 3️ Gemini chat
+          Your job is to answer the user's question using the provided context, which may come from:
+          - Uploaded PDFs
+          - YouTube video transcripts
+          - Web links or articles
+          - Tweets or social posts
+          - Notes saved by the user
+
+          Rules:
+          1. Always prioritize the provided context when answering.
+          2. If the answer is clearly present in the context, use it directly.
+          3. If the context is partially relevant, combine it with your general knowledge.
+          4. If the context does not contain the answer at all, answer using general knowledge — naturally and confidently.
+          5. Never mention phrases like "based on the context", "context not provided", or "the document says".
+          6. If multiple sources are present, synthesize them into a single clear answer and complete answer.
+          7. Keep responses clear, concise, and helpful — like a smart second brain.
+
+          Context:
+          ${contextText}
+        `;
+
+
+      // 3 Gemini chat
       const model = new ChatGoogleGenerativeAI({
         model: "gemini-2.5-flash",
         apiKey: process.env.GEMINI_RAG_KEY || "",
@@ -270,7 +495,7 @@ router.post("/chat1", authMiddleware,async (req, res) => {
         assistantReply = "Sorry, I couldn’t generate a proper response.";
       }
     } else {
-      console.log("No PDFs → using standard OpenAI reply");
+      console.log("No PDFs/Youtube → using standard OpenAI reply");
       assistantReply = await generateOpenAiResponse(message);
     }
 
