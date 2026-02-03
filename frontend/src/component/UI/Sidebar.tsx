@@ -53,7 +53,7 @@ export function Sidebar({
         <div className="flex items-center gap-2 pt-6 pl-2">
           <BrainIcon height={30} width={30}/>
           <h1 className="text-lg font-semibold  tracking-tight text-gray-900">
-            SecondBrain
+            BrainBox
           </h1>
         </div>
 

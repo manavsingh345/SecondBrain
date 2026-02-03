@@ -27,7 +27,7 @@ export default function Chat1(){
     
     return (
         <>
-        {newChat && <h1 className="text-3xl pt-10">Second Brain Welcome's you!</h1>}
+        {newChat && <h1 className="text-3xl pt-10">BrainBox Welcome's you!</h1>}
         <div className="chats w-full">
             {
                 prevChats?.slice(0,-1).map((chat,idx)=>

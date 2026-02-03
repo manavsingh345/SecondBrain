@@ -6,19 +6,16 @@ import { RingLoader } from "react-spinners";
 import Sidebar1 from "./Sidebar1";
 
 export default function ChatWindow() {
-  const {
-    prompt,
-    setPrompt,
-    reply,
-    setReply,
-    currThreadId,
-    setprevChats,
-    setnewChat
-  } = useContext(MyContext);
+  const { prompt, setPrompt,reply,setReply, currThreadId,setprevChats,setnewChat} = useContext(MyContext);
 
   const [loader, setLoader] = useState<boolean>(false);
   const [uploadedFileurl, setUploadedFileurl] = useState("");
   const [uploadedFilename, setUploadedFilename] = useState("");
+
+  const [showMenu, setShowMenu] = useState(false);
+  const [showLinkInput, setShowLinkInput] = useState<null | "youtube" | "link">(null);
+  const [tempLink, setTempLink] = useState("");
+
 
   const token = localStorage.getItem("token") ?? "";
 
@@ -181,7 +178,7 @@ export default function ChatWindow() {
           ...prev,
           {
             role: "user",
-            content: "Uploaded a link",
+            content: prompt,
             linkUrl: prompt
           }
         ]);
@@ -193,6 +190,74 @@ export default function ChatWindow() {
         setLoader(false);
       }
   };
+  // NEW: upload youtube using direct url
+const uploadYoutubeByUrl = async (url: string) => {
+  if (!url.trim()) return;
+
+  try {
+    setLoader(true);
+
+    await fetch("http://localhost:3000/api/v1/youtube", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token
+      },
+      body: JSON.stringify({
+        url,
+        threadId: currThreadId
+      })
+    });
+
+    setprevChats(prev => [
+      ...prev,
+      {
+        role: "user",
+        content: "Uploaded a YouTube video",
+        videoUrl: url
+      }
+    ]);
+  } catch (err) {
+    console.error("YouTube upload failed", err);
+  } finally {
+    setLoader(false);
+  }
+};
+
+// NEW: upload link using direct url
+const uploadLinkByUrl = async (url: string) => {
+  if (!url.trim()) return;
+
+  try {
+    setLoader(true);
+
+    await fetch("http://localhost:3000/api/v1/upload/link", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token
+      },
+      body: JSON.stringify({
+        url,
+        threadId: currThreadId
+      })
+    });
+
+    setprevChats(prev => [
+      ...prev,
+      {
+        role: "user",
+        content: url,
+        linkUrl: url
+      }
+    ]);
+  } catch (err) {
+    console.error("Link upload failed", err);
+  } finally {
+    setLoader(false);
+  }
+};
+
 
 
   // APPEND CHATS 
@@ -242,11 +307,7 @@ export default function ChatWindow() {
               )}
 
               {/* Textarea */}
-              <textarea
-                placeholder="Ask anything"
-                className="w-full"
-                value={prompt}
-                onChange={e => setPrompt(e.target.value)}
+              <textarea placeholder="Ask anything" className="w-full" value={prompt} onChange={e => setPrompt(e.target.value)}
                 onKeyDown={e => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
@@ -255,44 +316,104 @@ export default function ChatWindow() {
                 }}
               />
 
-              {/* PDF upload */}
-              <div
-                className="absolute left-4 top-1/2 -translate-y-1/2 cursor-pointer text-lg"
-                onClick={handleFile}
-              >
-                <i className="fa-solid fa-file"></i>
-              </div>
+              {/* PLUS BUTTON */}
+              <div className="absolute left-4 top-13 -translate-y-1/2 cursor-pointer text-xl" onClick={() => setShowMenu(prev => !prev)}
+                ><i className="fa-solid fa-plus"></i></div>
 
-              {/* YouTube upload */}
-              <div
-                className="absolute left-12 top-1/2 -translate-y-1/2 cursor-pointer text-lg text-red-500"
-                onClick={handleYoutube}
+              {showMenu && (
+              <div className="absolute left-4 bottom-16 bg-white shadow-lg rounded-xl p-2 w-48 z-50">
+              
+              {/* PDF */}
+              <button
+                className="flex items-center gap-2 w-full p-2 hover:bg-gray-100 rounded"
+                onClick={() => {
+                  setShowMenu(false);
+                  handleFile();
+                }}
               >
-                <i className="fa-brands fa-youtube"></i>
-              </div>
-              {/* Link upload */}
-              <div
-                className="absolute left-20 top-1/2 -translate-y-1/2 cursor-pointer text-lg text-blue-600"
-                onClick={handleLinkUpload}
-                title="Upload link"
+                <i className="fa-solid fa-file text-gray-700"></i>
+                Upload PDF
+              </button>
+
+              {/* YouTube */}
+              <button className="flex items-center gap-2 w-full p-2 hover:bg-gray-100 rounded"
+                onClick={() => {
+                  setShowMenu(false);
+                  setShowLinkInput("youtube");
+                }}
               >
-                <i className="fa-solid fa-link"></i>
-              </div>
+                <i className="fa-brands fa-youtube text-red-500"></i>YouTube link
+              </button>
+
+              {/* Link */}
+              <button className="flex items-center gap-2 w-full p-2 hover:bg-gray-100 rounded"
+                onClick={() => {
+                  setShowMenu(false);
+                  setShowLinkInput("link");
+                }}
+              >
+                <i className="fa-solid fa-link text-blue-600"></i> Website link </button>
+            </div>
+              )}
+
+
 
 
               {/* Send */}
-              <div
-                onClick={!loader ? getReply : undefined}
-                className={`cursor-pointer absolute flex justify-center items-center text-xl ${
-                  loader ? "opacity-50 pointer-events-none" : ""
-                }`}
-              >
+              <div onClick={!loader ? getReply : undefined}  className={`cursor-pointer absolute right-0 pr-8 text-xl ${ loader ? "opacity-50 pointer-events-none" : ""}`}>
                 <i className="fa-solid fa-paper-plane"></i>
               </div>
             </div>
 
+
+            {showLinkInput && (
+                <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
+                  <div className="bg-white p-4 rounded-xl w-[400px]">
+                    <h3 className="font-semibold mb-2">
+                      {showLinkInput === "youtube" ? "Add YouTube link" : "Add website link"}
+                    </h3>
+
+                    <input
+                      className="w-full border p-2 rounded mb-3"
+                      placeholder="Paste link here"
+                      value={tempLink}
+                      onChange={e => setTempLink(e.target.value)}
+                    />
+
+                    <div className="flex justify-end gap-2">
+                      <button
+                        className="px-3 py-1 border rounded"
+                        onClick={() => {
+                          setShowLinkInput(null);
+                          setTempLink("");
+                        }}
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        className="px-3 py-1 bg-black text-white rounded"
+                        onClick={async () => {
+                          if (showLinkInput === "youtube") {
+                          await uploadYoutubeByUrl(tempLink);
+                          } else {
+                          await uploadLinkByUrl(tempLink);
+                          }
+                          setTempLink("");
+                          setShowLinkInput(null);
+
+                        }}
+                      >
+                        Add
+                </button>
+              </div>
+            </div>
+          </div>
+            )}
+
+
             <p className="info text-sm">
-              SecondBrain can make mistakes. Check important info.
+              BrainBox can make mistakes. Check important info.
             </p>
           </div>
         </div>
